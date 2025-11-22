@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>The Grand Celebration 2025 - Fixed Music + Particles</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@1,400;1,900&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --gold:#D4AF37;
+            --neon-blue:#00f3ff;
+            --deep-bg:#050505;
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        html,body{height:100%}
+        body{
+            background:var(--deep-bg);
+            color:#fff;
+            font-family:'Quicksand',sans-serif;
+            overflow:hidden;
+            height:100vh;
+            width:100vw;
+            user-select:none;
+        }
+
+        canvas{position:absolute; top:0; left:0; z-index:0; display:block}
+
+        /* UI */
+        .main-ui{
+            position:absolute;
+            top:45%;
+            left:50%;
+            transform:translate(-50%,-50%);
+            z-index:20;
+            text-align:center;
+            width:100%;
+            mix-blend-mode:hard-light;
+            pointer-events:none;
+        }
+        .pre-title{font-family:'Cinzel',serif;letter-spacing:8px;font-size:1.1rem;color:var(--gold);text-transform:uppercase;opacity:0;animation:cinematicFadeIn 1.6s ease forwards 0.4s}
+        .main-title{font-family:'Playfair Display',serif;font-size:6rem;font-weight:900;font-style:italic;line-height:1.1;background:linear-gradient(45deg,#fff,var(--gold),#fff,var(--neon-blue));background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradientFlow 5s ease infinite,scaleUp 1.2s cubic-bezier(.2,.8,.2,1) forwards;opacity:0;text-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none}
+        .countdown-container{display:flex;justify-content:center;gap:20px;margin-top:20px;pointer-events:none}
+        .glass-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(12px);padding:14px;border-radius:14px;min-width:90px;box-shadow:0 10px 25px rgba(0,0,0,.4);opacity:0;animation:slideUp .9s ease forwards 1.2s}
+        .num{font-size:2.4rem;font-weight:700;display:block;font-variant-numeric:tabular-nums;text-shadow:0 0 12px var(--neon-blue)}
+        .txt{font-size:.75rem;text-transform:uppercase;letter-spacing:1.6px;opacity:.8}
+
+        .wish-input-container{
+            position: absolute;
+            bottom:120px;
+            left:50%;
+            transform:translateX(-50%);
+            z-index:100;
+            display:flex;
+            gap:10px;
+            pointer-events:auto;
+            opacity:.95;
+        }
+        .wish-input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);padding:10px 16px;border-radius:30px;color:#fff;width:300px;outline:none}
+        .send-btn{background:var(--gold);color:#000;border:none;padding:10px 18px;border-radius:30px;font-weight:700;cursor:pointer}
+
+        .creator-credit{position:fixed;bottom:14px;right:22px;z-index:100;font-size:.8rem;color:rgba(255,255,255,.45)}
+        .creator-credit span{color:var(--gold);font-weight:700}
+
+        .music-player{position:fixed;bottom:36px;left:36px;z-index:100;display:flex;align-items:center;gap:12px;cursor:pointer}
+        .play-btn{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:1.25rem}
+        .visualizer{display:flex;align-items:flex-end;height:30px;gap:4px}
+        .bar{width:4px;background:var(--neon-blue);height:6px;border-radius:2px;transition:height .12s ease}
+
+        @keyframes cinematicFadeIn{from{opacity:0;letter-spacing:20px;filter:blur(8px)}to{opacity:1;letter-spacing:8px;filter:blur(0)}}
+        @keyframes gradientFlow{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+        @keyframes scaleUp{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+        /* floating wish */
+        .floating-wish{position:absolute;font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;pointer-events:none;white-space:nowrap;animation:floatUpSpecial 2.5s ease-in forwards;opacity:0}
+        @keyframes floatUpSpecial{0%{transform:translateY(0) scale(.9);opacity:0;filter:blur(4px)}10%{opacity:1;filter:blur(0)}80%{opacity:1;transform:translateY(-45vh) scale(1.1);text-shadow:0 0 20px currentColor}100%{transform:translateY(-55vh) scale(1.3);opacity:0}}
+
+        @media(max-width:768px){
+            .main-title{font-size:3.2rem}
+            .glass-card{min-width:60px;padding:10px}
+            .num{font-size:1.6rem}
+            .wish-input{width:70vw}
+            .creator-credit{right:50%;transform:translateX(50%)}
+            .play-btn{width:44px;height:44px;font-size:1rem}
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bgCanvas"></canvas>
+    <canvas id="fireworksCanvas"></canvas>
+    <div id="wishesContainer"></div>
+
+    <div class="main-ui">
+        <div class="pre-title">Counting down to the moment</div>
+        <div class="main-title" id="yearTitle">202X</div>
+        <div class="countdown-container" id="countdown">
+            <div class="glass-card"><span class="num" id="d">00</span><span class="txt">Days</span></div>
+            <div class="glass-card"><span class="num" id="h">00</span><span class="txt">Hours</span></div>
+            <div class="glass-card"><span class="num" id="m">00</span><span class="txt">Minutes</span></div>
+            <div class="glass-card"><span class="num" id="s">00</span><span class="txt">Seconds</span></div>
+        </div>
+    </div>
+
+    <div class="wish-input-container">
+        <input id="wishInput" class="wish-input" placeholder="Nhập điều ước năm mới của bạn..." maxlength="50" />
+        <button class="send-btn" id="sendWishBtn">GỬI ĐIỀU ƯỚC</button>
+    </div>
+
+    <div class="creator-credit">Designed & Created by <span>Đức Thuấn</span></div>
+
+    <div class="music-player" id="toggleMusic" aria-label="Music toggle" role="button">
+        <div class="play-btn" id="playBtn">♪</div>
+        <div class="visualizer" id="visualizer">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+    </div>
+
+    <!-- invisible YouTube player holder -->
+    <div id="youtube-player" style="display:none"></div>
+
+    <script>
+    /***********************************************************
+     * FULL SCRIPT: Fixed particles removal + robust YouTube play
+     ***********************************************************/
+
+    // --- CONFIG (will adapt if mobile) ---
+    const IS_MOBILE = ('ontouchstart' in window) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const CONFIG = {
+        particleCountBase: IS_MOBILE ? 70 : 150,
+        starCount: IS_MOBILE ? 80 : 220,
+        connectDistance: IS_MOBILE ? 70 : 110,
+        autoFireworkChance: IS_MOBILE ? 0.02 : 0.06,
+        maxFPS: IS_MOBILE ? 30 : 60,
+        particleSpeedMultiplier: IS_MOBILE ? 0.7 : 1.0
+    };
+
+    // --- DOM + CANVAS SETUP ---
+    const bgCanvas = document.getElementById('bgCanvas');
+    const fwCanvas = document.getElementById('fireworksCanvas');
+    const wishesContainer = document.getElementById('wishesContainer');
+    const bgCtx = bgCanvas.getContext('2d', { alpha: true });
+    const fwCtx = fwCanvas.getContext('2d', { alpha: true });
+
+    let width = 0, height = 0;
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        const dpr = Math.min(window.devicePixelRatio || 1, IS_MOBILE ? 1.5 : 2);
+        bgCanvas.width = Math.floor(width * dpr);
+        bgCanvas.height = Math.floor(height * dpr);
+        fwCanvas.width = Math.floor(width * dpr);
+        fwCanvas.height = Math.floor(height * dpr);
+        bgCanvas.style.width = width + 'px';
+        bgCanvas.style.height = height + 'px';
+        fwCanvas.style.width = width + 'px';
+        fwCanvas.style.height = height + 'px';
+        bgCtx.setTransform(dpr,0,0,dpr,0,0);
+        fwCtx.setTransform(dpr,0,0,dpr,0,0);
+        initStars();
+    }
+    window.addEventListener('resize', () => { resize(); });
+    window.addEventListener('orientationchange', () => setTimeout(resize, 300));
+
+    // --- STARS & LINES (background) ---
+    let stars = [];
+    let mouse = { x: null, y: null };
+
+    class Star {
+        constructor(){
+            this.reset();
+        }
+        reset(){
+            this.x = Math.random()*width;
+            this.y = Math.random()*height;
+            this.size = Math.random()*1.6 + 0.2;
+            this.speedX = (Math.random()-0.5)*0.25;
+            this.speedY = (Math.random()-0.5)*0.25;
+            this.opacity = Math.random()*0.8 + 0.2;
+        }
+        update(){
+            this.x += this.speedX;
+            this.y += this.speedY;
+            if(this.x<0 || this.x>width) this.speedX *= -1;
+            if(this.y<0 || this.y>height) this.speedY *= -1;
+            if(mouse.x !== null){
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 90){
+                    this.x += dx*0.03;
+                    this.y += dy*0.03;
+                }
+            }
+        }
+        draw(){
+            bgCtx.fillStyle = `rgba(255,255,255,${this.opacity})`;
+            bgCtx.beginPath();
+            bgCtx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+            bgCtx.fill();
+        }
+    }
+
+    function initStars(){
+        stars = [];
+        for(let i=0;i<CONFIG.starCount;i++) stars.push(new Star());
+    }
+
+    function drawLines(){
+        const len = stars.length;
+        const maxD = CONFIG.connectDistance;
+        for(let i=0;i<len;i++){
+            for(let j=i+1;j<len;j++){
+                const dx = stars[i].x - stars[j].x;
+                const dy = stars[i].y - stars[j].y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < maxD){
+                    bgCtx.strokeStyle = `rgba(255,255,255,${1 - dist/maxD})`;
+                    bgCtx.lineWidth = 0.5;
+                    bgCtx.beginPath();
+                    bgCtx.moveTo(stars[i].x, stars[i].y);
+                    bgCtx.lineTo(stars[j].x, stars[j].y);
+                    bgCtx.stroke();
+                }
+            }
+        }
+    }
+
+    // --- FIREWORKS & PARTICLES ---
+    let particles = [];
+
+    class Particle {
+        constructor(x,y,color){
+            this.x = x;
+            this.y = y;
+            this.coordinates = [];
+            for(let i=0;i<4;i++) this.coordinates.push([x,y]);
+            this.angle = Math.random()*Math.PI*2;
+            this.speed = (Math.random()*8 + 2) * CONFIG.particleSpeedMultiplier;
+            this.friction = 0.96;
+            this.gravity = IS_MOBILE ? 0.6 : 0.9;
+            this.hue = Math.random()*360;
+            this.brightness = Math.random()*60 + 40;
+            this.alpha = 1;
+            this.decay = Math.random()*0.02 + 0.015;
+            this.color = color || `hsl(${this.hue},100%,${this.brightness}%)`;
+        }
+        // update only updates itself, does NOT splice array
+        update(){
+            this.coordinates.pop();
+            this.coordinates.unshift([this.x,this.y]);
+            this.speed *= this.friction;
+            this.x += Math.cos(this.angle)*this.speed;
+            this.y += Math.sin(this.angle)*this.speed + this.gravity;
+            this.alpha -= this.decay;
+        }
+        isDead(){
+            return this.alpha <= this.decay;
+        }
+        draw(ctx){
+            ctx.beginPath();
+            const last = this.coordinates[this.coordinates.length-1];
+            ctx.moveTo(last[0], last[1]);
+            ctx.lineTo(this.x, this.y);
+            const strokeColor = this.color.startsWith('hsl') ? this.color.replace('hsl','hsla').replace(')', `, ${Math.max(this.alpha,0)})`) : `hsla(${this.hue},100%,${this.brightness}%,${this.alpha})`;
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = Math.max(1, Math.min(3, this.speed/3));
+            ctx.stroke();
+        }
+    }
+
+    function createParticles(x,y,color, countOverride){
+        const base = countOverride || CONFIG.particleCountBase;
+        const count = Math.floor(base * (IS_MOBILE ? 0.65 : 1));
+        for(let i=0;i<count;i++){
+            particles.push(new Particle(x,y,color));
+        }
+    }
+
+    function createFirework(x,y){
+        const tx = x;
+        const ty = Math.max(50, y);
+        createParticles(tx, ty, `hsl(${Math.random()*360},100%,60%)`);
+    }
+
+    // --- WISH HANDLING: show floating wish, then turn into firework ---
+    const wishInput = document.getElementById('wishInput');
+    const sendWishBtn = document.getElementById('sendWishBtn');
+    sendWishBtn.addEventListener('click', sendWishSpecial);
+    wishInput.addEventListener('keypress', (e)=>{ if(e.key === 'Enter') sendWishSpecial(); });
+
+    function sendWishSpecial(){
+        const text = wishInput.value.trim();
+        if(!text) return;
+        const el = document.createElement('div');
+        el.className = 'floating-wish';
+        el.innerText = text;
+        const startX = Math.random()*(width-160)+80;
+        el.style.left = startX + 'px';
+        el.style.bottom = '150px';
+        const hue = Math.floor(Math.random()*360);
+        const wishColor = `hsl(${hue},100%,70%)`;
+        el.style.color = wishColor;
+        el.style.textShadow = `0 0 10px ${wishColor}, 0 0 20px ${wishColor}`;
+        wishesContainer.appendChild(el);
+        wishInput.value = '';
+
+        setTimeout(()=>{
+            const targetY = height * 0.28;
+            createParticles(startX, targetY, wishColor);
+            createParticles(startX, targetY, 'hsl(0,0%,100%)', Math.floor(CONFIG.particleCountBase*0.15));
+            document.body.style.transform = `scale(1.01) translateY(2px)`;
+            setTimeout(()=>document.body.style.transform = '', 120);
+        }, 2200);
+
+        setTimeout(()=>el.remove(), 2500);
+    }
+
+    // --- COUNTDOWN ---
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
+    document.getElementById('yearTitle').innerText = nextYear;
+    let countdownInterval;
+    function countdown(){
+        const now = new Date();
+        const eventDate = new Date(nextYear, 0, 1);
+        const diff = eventDate - now;
+        if(diff <= 0){
+            document.getElementById('countdown').innerHTML = `<h2 style="font-size:2.6rem;color:var(--gold);animation:slideUp .8s forwards">HAPPY NEW YEAR!</h2>`;
+            CONFIG.autoFireworkChance = 0.4;
+            const wishBox = document.querySelector('.wish-input-container');
+            if(wishBox) wishBox.style.display = 'none';
+            clearInterval(countdownInterval);
+            return;
+        }
+        const d = Math.floor(diff / (1000*60*60*24));
+        const h = Math.floor((diff / (1000*60*60)) % 24);
+        const m = Math.floor((diff / (1000*60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        document.getElementById('d').innerText = d < 10 ? '0'+d : d;
+        document.getElementById('h').innerText = h < 10 ? '0'+h : h;
+        document.getElementById('m').innerText = m < 10 ? '0'+m : m;
+        document.getElementById('s').innerText = s < 10 ? '0'+s : s;
+    }
+    countdownInterval = setInterval(countdown, 1000);
+    countdown();
+
+    // --- INTERACTIONS ---
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('touchstart', e => {
+        if(e.touches && e.touches[0]) { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }
+    }, {passive:true});
+    window.addEventListener('mousedown', e => {
+        if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') createFirework(e.clientX, e.clientY);
+    });
+
+    // --- ANIMATION LOOP WITH FPS CAP (UPDATE then DRAW) ---
+    let lastFrameTime = 0;
+    const minFrameInterval = 1000 / CONFIG.maxFPS;
+    function animate(now){
+        requestAnimationFrame(animate);
+        if(!lastFrameTime) lastFrameTime = now;
+        const elapsed = now - lastFrameTime;
+        if(elapsed < minFrameInterval) return;
+        lastFrameTime = now;
+
+        // background
+        bgCtx.clearRect(0,0,width,height);
+        stars.forEach(s => { s.update(); s.draw(); });
+        drawLines();
+
+        // fireworks canvas - trail effect (fade)
+        fwCtx.globalCompositeOperation = 'destination-out';
+        fwCtx.fillStyle = IS_MOBILE ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.12)';
+        fwCtx.fillRect(0,0,width,height);
+        fwCtx.globalCompositeOperation = 'lighter';
+
+        // maybe auto fireworks sometimes
+        if(Math.random() < CONFIG.autoFireworkChance){
+            createParticles(Math.random()*width, Math.random()*height*0.5);
+        }
+
+        // UPDATE all particles (do not splice here)
+        for(let i = particles.length - 1; i >= 0; i--){
+            particles[i].update();
+        }
+        // REMOVE dead particles safely (single pass)
+        for(let i = particles.length - 1; i >= 0; i--){
+            if(particles[i].isDead()){
+                particles.splice(i,1);
+            }
+        }
+        // DRAW remaining particles
+        for(let i = particles.length - 1; i >= 0; i--){
+            particles[i].draw(fwCtx);
+        }
+    }
+
+    // --- MUSIC: YouTube iframe API (play after user gesture) ---
+    // You provided: https://www.youtube.com/watch?v=AE3ywjhgjqM&list=RDAE3ywjhgjqM&start_radio=1
+    const DEFAULT_VIDEO_ID = 'AE3ywjhgjqM';
+    const DEFAULT_PLAYLIST = 'RDAE3ywjhgjqM';
+
+    let player = null;
+    let isPlaying = false;
+    let pendingPlay = false; // flag to request play if player not ready yet
+    const playBtn = document.getElementById('playBtn');
+    const bars = document.querySelectorAll('.bar');
+    let visualizerInterval = null;
+
+    // Insert YT API script
+    (function loadYT(){
+        if(window.YT && window.YT.Player) { onYouTubeIframeAPIReady(); return; }
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+    })();
+
+    // Global callback for YT API
+    function onYouTubeIframeAPIReady(){
+        // If already created, don't recreate
+        if(player) return;
+        player = new YT.Player('youtube-player', {
+            height: '0',
+            width: '0',
+            videoId: DEFAULT_VIDEO_ID,
+            playerVars: {
+                autoplay: 0,
+                controls: 0,
+                loop: 1,
+                playlist: DEFAULT_PLAYLIST,
+                modestbranding: 1,
+                rel: 0,
+                enablejsapi: 1
+            },
+            events:{
+                onReady: (e) => {
+                    // If user already asked to play, do it now
+                    if(pendingPlay){
+                        try { e.target.playVideo(); } catch(err){ /* ignore */ }
+                        pendingPlay = false;
+                        startVisualizer();
+                    }
+                },
+                onStateChange: (e) => {
+                    if(e.data === YT.PlayerState.PLAYING) {
+                        isPlaying = true;
+                        playBtn.innerText = '❚❚';
+                        startVisualizer();
+                    } else {
+                        isPlaying = false;
+                        playBtn.innerText = '♪';
+                        // do not stop visualizer immediately to avoid jank; keep it but reduced
+                    }
+                }
+            }
+        });
+    }
+    // expose globally (YT expects this name)
+    window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+    // Called on first user gesture (click/touch)
+    function handleFirstUserGesture(){
+        // If player ready, try to play
+        if(player && player.playVideo){
+            try {
+                player.playVideo();
+                startVisualizer();
+            } catch(err){
+                // If play fails, set pending flag and let onReady handle it
+                pendingPlay = true;
+            }
+        } else {
+            // Player not ready yet: mark pendingPlay so onReady plays when ready
+            pendingPlay = true;
+        }
+        // remove these first-gesture listeners (we only need once)
+        window.removeEventListener('click', handleFirstUserGesture);
+        window.removeEventListener('touchstart', handleFirstUserGesture);
+    }
+    // Attach once-only listeners for user gesture
+    window.addEventListener('click', handleFirstUserGesture, { once: true });
+    window.addEventListener('touchstart', handleFirstUserGesture, { once: true, passive: true });
+
+    // Play/pause toggle click (UI)
+    document.getElementById('toggleMusic').addEventListener('click', () => {
+        if(!player || !player.playVideo) {
+            // If player not ready yet, try to initialize and queue play
+            pendingPlay = true;
+            // ensure YT script loaded
+            if(!window.YT) {
+                // try loading again
+                const tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                document.head.appendChild(tag);
+            }
+            return;
+        }
+        // If playing -> pause; otherwise play
+        if(isPlaying){
+            try { player.pauseVideo(); } catch(e){}
+            stopVisualizer();
+        } else {
+            try { player.playVideo(); } catch(e){
+                // If play throws (autoplay restrictions), set pending flag and rely on gesture
+                pendingPlay = true;
+            }
+            startVisualizer();
+        }
+    });
+
+    // start/stop visualizer
+    function startVisualizer(){
+        if(visualizerInterval) return;
+        visualizerInterval = setInterval(()=>{
+            if(isPlaying){
+                bars.forEach(bar => bar.style.height = (Math.random()* (IS_MOBILE ? 22 : 30) + (IS_MOBILE ? 4 : 5)) + 'px');
+            } else {
+                bars.forEach(bar => bar.style.height = (IS_MOBILE?4:5)+'px');
+            }
+        }, IS_MOBILE ? 140 : 100);
+    }
+    function stopVisualizer(){
+        if(!visualizerInterval) return;
+        clearInterval(visualizerInterval);
+        visualizerInterval = null;
+        bars.forEach(bar => bar.style.height = (IS_MOBILE?4:5) + 'px');
+    }
+
+    // ensure playBtn toggles UI even if YT updates states are delayed
+    playBtn.addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('toggleMusic').click(); });
+
+    // --- INIT ---
+    resize();
+    animate();
+
+    mouse.x = null; mouse.y = null;
+
+    // Reduce heavy explosions on low-memory devices (simple heuristic)
+    function checkMemoryHints(){
+        try {
+            if(navigator && navigator.deviceMemory && navigator.deviceMemory <= 1){
+                CONFIG.particleCountBase = Math.floor(CONFIG.particleCountBase * 0.5);
+                CONFIG.starCount = Math.floor(CONFIG.starCount * 0.5);
+            }
+        } catch(e){}
+    }
+    checkMemoryHints();
+
+    // quick tap to spawn fireworks on mobile
+    if(IS_MOBILE){
+        window.addEventListener('touchend', (ev) => {
+            if(ev.changedTouches && ev.changedTouches[0]){
+                const t = ev.changedTouches[0];
+                createFirework(t.clientX, t.clientY);
+            }
+        }, {passive:true});
+    }
+    </script>
+</body>
+</html>
